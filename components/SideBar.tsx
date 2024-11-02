@@ -28,6 +28,12 @@ export default function Sidebar(): JSX.Element {
           <Users className="h-5 w-5 mr-3" />
           Visitors
         </Link>
+        
+        <Link href="/dashboard/reports" 
+          className={`flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 ${isActive('/dashboard/reports')}`}>
+          <Users className="h-5 w-5 mr-3" />
+          Reports
+        </Link>
       </nav>
     </div>
   );

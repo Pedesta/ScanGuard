@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useVisitorStore } from '@/store/visitor-store'
+import Swal from 'sweetalert2';
 
 export default function WebcamModal(): JSX.Element {
   const { addVisitor, setCapturing, capturing } = useVisitorStore();
@@ -15,7 +16,7 @@ export default function WebcamModal(): JSX.Element {
         videoRef.current.srcObject = mediaStream;
       }
     } catch (err) {
-      console.error("Error accessing webcam:", err);
+      console.log(`${err}`);
     }
   };
 
@@ -60,14 +61,19 @@ export default function WebcamModal(): JSX.Element {
           });
 
           if (!response.ok) {
-            throw new Error('Failed to save image');
+            const data = await response.json()
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops!!',
+                text: `${data.message}`.replace(/Error:/g, '')
+            });
+            return;
           }
           const data = await response.json()
           addVisitor(data.visitor)
         }
       } catch (error) {
-        console.error('Error saving image:', error);
-        alert('Failed to save image');
+        console.log(`${error}`);
       } finally {
         setCapturing(false);
       }

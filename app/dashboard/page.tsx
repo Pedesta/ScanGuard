@@ -46,7 +46,7 @@ export default function Dashboard(): JSX.Element {
           // Only add if duration is positive
           return acc + (durationMs > 0 ? durationMs : 0);
         } catch (error) {
-          console.error('Error calculating stay duration:', error);
+          console.log(`${error}`);
           return acc;
         }
       }, 0) / completedVisits.length : 0;

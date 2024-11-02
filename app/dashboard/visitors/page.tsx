@@ -93,7 +93,11 @@ export default function Visitors() {
       if (!response.ok) throw new Error('Failed to save visitor');
       setIsModalOpen(false);
     } catch (error) {
-      console.error('Error:', error);
+      Swal.fire({
+        title: "Oops!",
+        text: `${error}`,
+        icon: "error"
+      });
     }
   };
 

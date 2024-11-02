@@ -49,9 +49,8 @@ export async function POST(
       visitor: updatedVisitor
     });
   } catch (error) {
-    console.error('Error checking out visitor:', error);
     return NextResponse.json(
-      { message: 'Failed to check out visitor' },
+      { message: 'Failed to check out visitor', error: `${error}` },
       { status: 500 }
     );
   }
@@ -90,9 +89,8 @@ try {
     visitor: id
   });
 } catch (error) {
-  console.error('Error deleting visitor:', error);
   return NextResponse.json(
-    { message: 'Failed to delete visitor' },
+    { message: 'Failed to delete visitor', error: `${error}` },
     { status: 500 }
   );
 }

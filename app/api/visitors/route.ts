@@ -3,6 +3,14 @@ import clientPromise from '@/lib/mongodb';
 import type { VisitorOCRData, GPTVisionResponse } from '@/types';
 import { ObjectId } from 'mongodb';
 
+const invalidId = "Not a valid id card";
+interface Query {
+  createdAt?: {
+    $gte: Date;
+    $lte: Date;
+  };
+}
+
 const PROMPT = `
 Extract information as json only from this image. 
 Return json with: 
@@ -15,26 +23,41 @@ Return json with:
 
 Match fields appropriately even if names differ slightly.
 
-If the image does not contain the text 'REGISTRATION' then simply respond with "Not a valid id card" only!!!
-If the image does not contain the text 'REGISTRATION' then simply respond with "not a valid id card" only!!!
-If the image does not contain the text 'REGISTRATION' then simply respond with "not a valid id card" only!!!
+If the image does not contain the text 'REGISTRATION' then simply respond with "${invalidId}" only!!!
+If the image does not contain the text 'REGISTRATION' then simply respond with "${invalidId}" only!!!
+If the image does not contain the text 'REGISTRATION' then simply respond with "${invalidId}" only!!!
 `;
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const client = await clientPromise;
     const db = client.db("llmorc");
 
+    // Extract query parameters from the URL
+    const { searchParams } = new URL(request.url);
+    const start = searchParams.get('start');
+    const end = searchParams.get('end');
+
+    // Build the query
+    const query: Query = {};
+
+    // Add date range filter if both start and end dates are provided
+    if (start && end) {
+      query.createdAt = {
+        $gte: new Date(start),
+        $lte: new Date(end)
+      };
+    }
+
     const visitors = await db.collection('visitors')
-      .find({})
+      .find(query, { projection: { image: 0, ocrMessage: 0, ocrSuccess: 0 } })
       .sort({ createdAt: -1 })
       .toArray();
 
     return NextResponse.json(visitors);
   } catch (error) {
-    console.error('Error fetching visitors:', error);
     return NextResponse.json(
-      { message: 'Failed to fetch visitors' },
+      { message: 'Failed to fetch visitors', error: `${error}` },
       { status: 500 }
     );
   }
@@ -73,7 +96,10 @@ export async function POST(request: Request) {
           };
         }
       } catch (error) {
-        console.error('Image processing failed:', error);
+        return NextResponse.json(
+          { message: `${error}` }, 
+          { status: 500 }
+        );
       }
     }
 
@@ -93,6 +119,19 @@ export async function POST(request: Request) {
         }
       );
     } else {
+      // First find by identifier
+      const exists = await db.collection('visitors')
+      .find({ 
+        identification: visitor.identification, 
+        checkout: ''
+      }, { projection: { image: 0} }).toArray();
+      if(exists?.length > 0) {
+        return NextResponse.json(
+          { message: 'A visitor with same ID is still checked in. Entry Aborted!' },
+          { status: 500 }
+        );
+      }
+
       const _result = await db.collection('visitors').insertOne(visitor);
       result = await db.collection('visitors')
       .findOne({_id: _result.insertedId })
@@ -103,16 +142,15 @@ export async function POST(request: Request) {
       visitor: result
     });
   } catch (error) {
-    console.error('Error creating visitor:', error);
     return NextResponse.json(
-      { message: 'Failed to create visitor' },
+      { message: 'Failed to create visitor', error: `${error}` },
       { status: 500 }
     );
   }
 }
 
 
-async function processImageWithGPTVision(imageUrl: string): Promise<VisitorOCRData | null> {
+async function processImageWithGPTVision(imageUrl: string): Promise<VisitorOCRData> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OpenAI API key not configured');
   }
@@ -146,33 +184,32 @@ async function processImageWithGPTVision(imageUrl: string): Promise<VisitorOCRDa
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(`GPT Vision API error: ${error.error?.message || 'Unknown error'}`);
+    throw new Error(`${error.error?.message || 'GPT Vision error'}`);
   }
 
   const data: GPTVisionResponse = await response.json();
   return extractJSON(data.choices[0]?.message?.content);
 }
 
-function extractJSON(message: string | undefined): VisitorOCRData | null {
-  if (!message) return null;
-
+function extractJSON(message: string): VisitorOCRData {
   try {
     const jsonString = message
       .replace(/```json\n?/, '')  // Remove starting ```json and optional newline
       .replace(/\n?```/, '')      // Remove ending ``` and optional newline
       .trim();
     
+    if(jsonString.includes(invalidId)) {
+      throw new Error(jsonString);
+    }
     const parsed = JSON.parse(jsonString);
     
     // Validate required fields
     if (!parsed.identification || !parsed.firstname || !parsed.surname || !parsed.birthDate) {
-      console.warn('Parsed JSON missing required fields:', parsed);
-      return null;
+      throw new Error("Parsed data does not contain all required fileds.");
     }
 
     return parsed as VisitorOCRData;
   } catch (error) {
-    console.error("Failed to parse JSON:", error);
-    return null;
+    throw new Error(`${error}`);
   }
 }

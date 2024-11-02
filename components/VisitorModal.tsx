@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Visitor } from '@/types';
+import Swal from 'sweetalert2';
 
 interface VisitorModalProps {
   isOpen: boolean;
@@ -84,7 +85,11 @@ const VisitorModal: React.FC<VisitorModalProps> = ({
       });
       onClose();
     } catch (error) {
-      console.error('Error submitting form:', error);
+      Swal.fire({
+            icon: 'error',
+            title: 'Oops!!',
+            text: `${error}`.replace(/Error:/g, '')
+        });
     } finally {
       setIsLoading(false);
     }
