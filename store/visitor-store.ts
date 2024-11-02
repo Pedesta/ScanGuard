@@ -8,6 +8,7 @@ type VisitorStore = {
   addVisitor: (visitor: Visitor) => void;
   setVisitors: (visitors: Visitor[]) => void;
   updateVisitor: (updated: Visitor) => void;
+  deleteVisitor: (id: string) => void;
 };
 
 export const useVisitorStore = create<VisitorStore>((set) => ({
@@ -22,5 +23,9 @@ export const useVisitorStore = create<VisitorStore>((set) => ({
     );
     return { visitors };
   }),
+  deleteVisitor: (id: string) => set((state) => {
+    const visitors = state.visitors.filter(v => v._id != id );
+    return { visitors };
+  })
 }))
 

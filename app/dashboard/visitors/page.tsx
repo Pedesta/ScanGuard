@@ -5,30 +5,41 @@ import { Camera } from 'lucide-react';
 import { useVisitorStore } from '@/store/visitor-store'
 import { calculateStay, formatDatetime } from '@/utils'
 import VisitorModal from '@/components/VisitorModal';
+import Swal from 'sweetalert2'
 
 import { Visitor } from '@/types';
 
 export default function Visitors() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVisitor, setSelectedVisitor] = useState<Partial<Visitor> | undefined>();
-  const { visitors, capturing, updateVisitor } = useVisitorStore();
+  const { visitors, capturing, updateVisitor, deleteVisitor } = useVisitorStore();
 
-  const handleCheckout = async (visitorId: string) => {
-    if (confirm('Are you sure you want to check out this visitor?')) {
-      try {
-        const response = await fetch(`/api/visitors/${visitorId}`, {
+  const handleCheckout = async (visitor: Visitor) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You want to checkout " + visitor.firstname,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, check out!"
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const response = await fetch(`/api/visitors/${visitor._id}`, {
           method: 'POST',
         });
-        if (!response.ok) {
-          throw new Error('Failed to check out visitor');
+        if (!response.ok){
+          Swal.fire({
+            title: "Error!",
+            text: `Failed to checkout ${visitor.firstname}`,
+            icon: "error"
+          });
+        } else {
+          const updated = await response.json();
+          updateVisitor(updated.visitor);
         }
-        const updated = await response.json();
-        console.log("updated checkout ", updated.visitor)
-        updateVisitor(updated.visitor);
-      } catch (err) {
-        alert(err instanceof Error ? err.message : 'An error occurred');
       }
-    }
+    });
   };
 
   // For creating a new visitor
@@ -42,6 +53,34 @@ export default function Visitors() {
     setSelectedVisitor(visitor);
     setIsModalOpen(true);
   };
+
+  // Delete record
+  const handleDelete = async (visitor: Visitor) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!"
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const response = await fetch(`/api/visitors/${visitor._id}`, {
+          method: 'DELETE',
+        })
+        if (!response.ok){
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to delete visitor",
+            icon: "error"
+          });
+        } else {
+          deleteVisitor(visitor._id);
+        }
+      }
+    });
+  }
 
   const handleSubmit = async (visitorData: Partial<Visitor>) => {
     try {
@@ -57,7 +96,6 @@ export default function Visitors() {
       console.error('Error:', error);
     }
   };
-
 
   return (
     <div>
@@ -138,7 +176,7 @@ export default function Visitors() {
                 <td className="px-2 py-1 whitespace-nowrap">
                   {visitor.checkout ? formatDatetime(visitor.checkout) : (
                     <button
-                      onClick={() => handleCheckout(visitor._id)}
+                      onClick={() => handleCheckout(visitor)}
                       className="text-sm text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-md"
                     >
                       Checkout
@@ -148,12 +186,20 @@ export default function Visitors() {
                 <td className="px-6 py-4 whitespace-nowrap">{calculateStay(visitor.checkin, visitor.checkout)}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {!visitor.checkout &&
-                  <button 
-                    onClick={() => handleUpdate(visitor)}
-                    className="text-sm text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-md"
-                  >
-                    Update
-                  </button>
+                  <>
+                    <button 
+                      onClick={() => handleUpdate(visitor)}
+                      className="text-sm text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-md"
+                    >
+                      Update
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(visitor)}
+                      className="ml-2 text-sm text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded-md"
+                    >
+                      Delete
+                    </button>
+                  </>
                   }
                 </td>
               </tr>

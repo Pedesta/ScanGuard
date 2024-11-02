@@ -14,8 +14,11 @@ Return json with:
   - Note that the last letter in the identification, if available, represents gender).
 
 Match fields appropriately even if names differ slightly.
-`;
 
+If the image does not contain the text 'REGISTRATION' then simply respond with "Not a valid id card" only!!!
+If the image does not contain the text 'REGISTRATION' then simply respond with "not a valid id card" only!!!
+If the image does not contain the text 'REGISTRATION' then simply respond with "not a valid id card" only!!!
+`;
 
 export async function GET() {
   try {
@@ -90,7 +93,9 @@ export async function POST(request: Request) {
         }
       );
     } else {
-      result = await db.collection('visitors').insertOne(visitor);
+      const _result = await db.collection('visitors').insertOne(visitor);
+      result = await db.collection('visitors')
+      .findOne({_id: _result.insertedId })
     }
 
     return NextResponse.json({ 
