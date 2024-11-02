@@ -1,0 +1,39 @@
+{
+  "name": "llmocr",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "create-superuser": "ts-node scripts/create-superuser.mts"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.453.0",
+    "mongodb": "^6.9.0",
+    "next": "14.2.15",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-wordcloud": "^1.2.7",
+    "recharts": "^2.13.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^20.16.13",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.15",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
+  }
+}
