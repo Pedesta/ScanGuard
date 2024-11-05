@@ -61,6 +61,16 @@ export default function Reports(): JSX.Element {
       }
 
       const data = await response.json();
+      if(data.length === 0){
+        Swal.fire({
+          icon: "info",
+          title: "No Data Found!",
+          text: "The selected period has no data, change your data ranges."
+        })
+        return;
+      }
+      console.log(data)
+
       const transformedData = transformData(data);
       const headers = Array.from(new Set(transformedData.flatMap(Object.keys)));
       const csv = Papa.unparse(transformedData, {
