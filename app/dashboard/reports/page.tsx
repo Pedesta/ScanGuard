@@ -69,7 +69,6 @@ export default function Reports(): JSX.Element {
         })
         return;
       }
-      console.log(data)
 
       const transformedData = transformData(data);
       const headers = Array.from(new Set(transformedData.flatMap(Object.keys)));
